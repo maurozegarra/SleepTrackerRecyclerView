@@ -1,5 +1,7 @@
 package com.maurozegarra.example.sleeptracker.sleeptracker
 
+import android.view.View
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.databinding.BindingAdapter
@@ -19,6 +21,23 @@ fun TextView.setSleepDurationFormatted(item: SleepNight?) {
 fun TextView.setSleepQualityString(item: SleepNight?) {
     item?.let {
         text = convertNumericQualityToString(item.sleepQuality, context.resources)
+    }
+}
+
+@BindingAdapter("startButtonVisible")
+fun Button.setStartButtonVisible(item: SleepNight?) {
+    visibility = if (item == null) View.VISIBLE else View.INVISIBLE
+}
+
+@BindingAdapter("stopButtonVisible")
+fun Button.setStopButtonVisible(item: SleepNight?) {
+    visibility = if (item != null) View.VISIBLE else View.INVISIBLE
+}
+
+@BindingAdapter("clearButtonVisible")
+fun Button.setClearButtonVisible(nights: List<SleepNight>?) {
+    nights?.let {
+        visibility = if (it.isNotEmpty()) View.VISIBLE else View.INVISIBLE
     }
 }
 

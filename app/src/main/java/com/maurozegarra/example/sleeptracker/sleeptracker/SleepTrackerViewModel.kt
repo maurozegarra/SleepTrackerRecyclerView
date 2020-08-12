@@ -1,14 +1,12 @@
 package com.maurozegarra.example.sleeptracker.sleeptracker
 
 import android.app.Application
-import android.text.Spanned
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Transformations
 import com.maurozegarra.example.sleeptracker.database.SleepDatabaseDao
 import com.maurozegarra.example.sleeptracker.database.SleepNight
-import com.maurozegarra.example.sleeptracker.formatNights
 import kotlinx.coroutines.*
 
 //@formatter:off
@@ -28,22 +26,19 @@ class SleepTrackerViewModel(val database: SleepDatabaseDao,
 
     private val uiScope = CoroutineScope(Dispatchers.Main + viewModelJob)
 
-    private var tonight = MutableLiveData<SleepNight?>()
+    private var _tonight = MutableLiveData<SleepNight?>()
+    val tonight: LiveData<SleepNight?>
+        get() = _tonight
 
     val nights = database.getAllNights()
 
-    // Converted nights to Spanned for displaying.
-    val nightsString: LiveData<Spanned> = Transformations.map(nights) { nights ->
-        formatNights(nights, application.resources)
-    }
-
     // If tonight has not been set, then the START button should be visible.
-    val startButtonVisible = Transformations.map(tonight) {
+    val startButtonVisible = Transformations.map(_tonight) {
         it == null
     }
 
     // If tonight has been set, then the STOP button should be visible.
-    val stopButtonVisible = Transformations.map(tonight) {
+    val stopButtonVisible = Transformations.map(_tonight) {
         it != null
     }
 
@@ -62,14 +57,14 @@ class SleepTrackerViewModel(val database: SleepDatabaseDao,
 
     private val _navigateToSleepQuality = MutableLiveData<SleepNight>()
 
-    fun doneShowingSnackbar() {
-        _showSnackbarEvent.value = false
-    }
-
     // Call this immediately after navigating to [SleepQualityFragment]
     // It will clear the navigation request, so if the user rotates their phone it won't navigate twice.
     fun doneNavigating() {
         _navigateToSleepQuality.value = null
+    }
+
+    fun doneShowingSnackbar() {
+        _showSnackbarEvent.value = false
     }
 
     init {
@@ -78,7 +73,7 @@ class SleepTrackerViewModel(val database: SleepDatabaseDao,
 
     private fun initializeTonight() {
         uiScope.launch {
-            tonight.value = getTonightFromDatabase()
+            _tonight.value = getTonightFromDatabase()
         }
     }
 
@@ -123,7 +118,7 @@ class SleepTrackerViewModel(val database: SleepDatabaseDao,
 
             insert(newNight)
 
-            tonight.value = getTonightFromDatabase()
+            _tonight.value = getTonightFromDatabase()
         }
     }
 
@@ -135,7 +130,7 @@ class SleepTrackerViewModel(val database: SleepDatabaseDao,
             // several nested ones this statement returns from.
             // In this case, we are specifying to return from launch(),
             // not the lambda.
-            val oldNight = tonight.value ?: return@launch
+            val oldNight = _tonight.value ?: return@launch
 
             // Update the night in the database to add the end time.
             oldNight.endTimeMilli = System.currentTimeMillis()
@@ -155,7 +150,7 @@ class SleepTrackerViewModel(val database: SleepDatabaseDao,
             clear()
 
             // And clear tonight since it's no longer in the database
-            tonight.value = null
+            _tonight.value = null
 
             _showSnackbarEvent.value = true
         }
